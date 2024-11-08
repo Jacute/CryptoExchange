@@ -1,16 +1,30 @@
 package jacutesql
 
-import "fmt"
+import (
+	"JacuteCE/internal/storage"
+	"fmt"
+)
 
 func (s *Storage) SaveUser(username string, token string) (string, error) {
 	const op = "storage.JacuteSQL.SaveUser"
 
-	err := s.Exec("INSERT INTO user VALUES ('?', '?')", username, token)
+	// check if the user exists
+	data, err := s.Query("SELECT user.user_pk FROM user WHERE user.username = '?'", username)
+	if err != nil {
+		return "", fmt.Errorf("%s: %w", op, err)
+	}
+	if len(data) != 0 {
+		return "", fmt.Errorf("%s: %w", op, storage.ErrUserExists)
+	}
+
+	// TODO: fix the race condition here
+
+	err = s.Exec("INSERT INTO user VALUES ('?', '?')", username, token)
 	if err != nil {
 		return "", fmt.Errorf("%s: %w", op, err)
 	}
 
-	data, err := s.Query("SELECT user.user_pk FROM user WHERE user.token = '?'", token)
+	data, err = s.Query("SELECT user.user_pk FROM user WHERE user.token = '?'", token)
 	if err != nil {
 		return "", fmt.Errorf("%s: %w", op, err)
 	}

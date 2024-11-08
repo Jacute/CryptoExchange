@@ -16,6 +16,7 @@ func main() {
 
 	logger := logger.New(cfg.Env)
 	db := jacutesql.New(cfg.DatabaseConfig.IP, cfg.DatabaseConfig.Port, cfg.Lots)
+	db.MakeMigrations(cfg.Lots)
 
 	logger.Log.Info(
 		"starting app",

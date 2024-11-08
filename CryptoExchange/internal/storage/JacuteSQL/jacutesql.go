@@ -35,7 +35,6 @@ func New(ip string, port int, lots []string) *Storage {
 		ip:   ip,
 		port: port,
 	}
-	s.makeMigrations(lots)
 
 	return s
 }
@@ -63,13 +62,20 @@ func (s *Storage) write(data string) (string, error) {
 		return "", fmt.Errorf("%s: no bytes written", op)
 	}
 
-	buf = make([]byte, 1024)
-	n, err = conn.Read(buf)
-	if err != nil {
-		return "", fmt.Errorf("%s: %w", op, err)
+	var outputBuilder strings.Builder
+	buf = make([]byte, 4096)
+	for {
+		n, err := conn.Read(buf)
+		if err != nil {
+			return "", fmt.Errorf("%s: %w", op, err)
+		}
+		outputBuilder.Write(buf[:n])
+		if strings.Contains(outputBuilder.String(), ">> ") {
+			break
+		}
 	}
 
-	output := string(buf[:n])
+	output := outputBuilder.String()
 
 	if strings.Contains(output, "is already blocked") {
 		return "", fmt.Errorf("%s: %s", op, "table blocked")
@@ -140,7 +146,6 @@ func (s *Storage) Query(query string, args ...string) ([]map[string]string, erro
 	if err != nil {
 		return nil, err
 	}
-
 	rows := strings.Split(output, "\n")
 	if len(rows) == 2 {
 		return []map[string]string{}, nil
@@ -148,7 +153,6 @@ func (s *Storage) Query(query string, args ...string) ([]map[string]string, erro
 	rows = rows[2 : len(rows)-1] // remove user-friendly interface strings
 	header := strings.Split(rows[0], ",")
 	rows = rows[1:] // remove header
-
 	table := make([]map[string]string, len(rows))
 	for i, row := range rows {
 		cols := strings.Split(row, ",")
@@ -163,6 +167,17 @@ func (s *Storage) Query(query string, args ...string) ([]map[string]string, erro
 	return table, nil
 }
 
+func (s *Storage) Destroy() error {
+	const op = "storage.JacuteSQL.Destroy"
+
+	err := s.Exec("DELETE FROM lot, pair, user, user_lot, order")
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	return nil
+}
+
 func (s *Storage) getIDByParam(table []map[string]string, idName string, paramName string, paramValue string) string {
 	for _, row := range table {
 		if row[paramName] == paramValue {
@@ -172,13 +187,12 @@ func (s *Storage) getIDByParam(table []map[string]string, idName string, paramNa
 	return ""
 }
 
-func (s *Storage) makeMigrations(lots []string) {
+func (s *Storage) MakeMigrations(lots []string) {
 	// create lots
-	table, err := s.Query("SELECT lot.lot_pk FROM lot")
+	table, err := s.Query("SELECT lot.name FROM lot")
 	if err != nil {
 		panic(err)
 	}
-
 	if len(table) == 0 {
 		for _, lot := range lots {
 			err := s.Exec("INSERT INTO lot VALUES ('?')", lot)
@@ -196,6 +210,7 @@ func (s *Storage) makeMigrations(lots []string) {
 
 	if len(table) == 0 {
 		table, err := s.Query("SELECT lot.lot_pk, lot.name FROM lot")
+		fmt.Println(table)
 		if err != nil {
 			panic(err)
 		}

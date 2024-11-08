@@ -54,6 +54,11 @@ func New(log *slog.Logger, userProvider UserProvider, tokenLen int) http.Handler
 				render.JSON(w, r, response.Error("malicious parameter"))
 				return
 			}
+			if errors.Is(err, storage.ErrUserExists) {
+				log.Warn("user already exists", prettylogger.Err(err))
+				render.JSON(w, r, response.Error("user already exists"))
+				return
+			}
 			log.Error("failed to save user", prettylogger.Err(err))
 			render.JSON(w, r, response.Error("internal error"))
 			return

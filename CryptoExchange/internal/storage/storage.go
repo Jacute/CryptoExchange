@@ -7,4 +7,6 @@ var (
 	ErrInvalidSQLCommand  = errors.New("invalid sql command")
 	ErrSQLExecFailed      = errors.New("sql command failed")
 	ErrConnect            = errors.New("database connection error")
+
+	ErrUserExists = errors.New("user already exists")
 )

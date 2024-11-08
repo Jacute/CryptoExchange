@@ -29,7 +29,7 @@ func New(cfg *config.AppConfig, log *slog.Logger, db *jacutesql.Storage) *App {
 	}
 }
 
-func (a *App) setupRouter() http.Handler {
+func (a *App) SetupRouter() http.Handler {
 	router := chi.NewRouter()
 	loggerMiddleware := mwlogger.New(a.log)
 	recovererMiddleware := mwrecoverer.New(a.log)
@@ -55,7 +55,7 @@ func (a *App) Run() error {
 
 	a.httpServer = &http.Server{
 		Addr:         fmt.Sprintf("%s:%d", a.cfg.IP, a.cfg.Port),
-		Handler:      a.setupRouter(),
+		Handler:      a.SetupRouter(),
 		ReadTimeout:  a.cfg.ReadTimeout,
 		WriteTimeout: a.cfg.WriteTimeout,
 		IdleTimeout:  a.cfg.IdleTimeout,
