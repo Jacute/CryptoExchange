@@ -1,0 +1,17 @@
+env: local
+app:
+  ip: localhost
+  port: 8080
+  read_timeout: 4s
+  write_timeout: 4s
+  idle_timeout": 60s
+  lots:
+    - RUB
+    - BTC
+    - ETH
+    - USDT
+    - USDC
+  token_length: 32
+database:
+  ip: localhost
+  port: 7432
