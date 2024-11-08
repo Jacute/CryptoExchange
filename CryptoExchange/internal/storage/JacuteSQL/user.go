@@ -40,12 +40,20 @@ func (s *Storage) SaveUser(username string, token string) (string, error) {
 	return id, nil
 }
 
-func (s *Storage) SaveLot(userID string, lotID string, quantity string) error {
+func (s *Storage) AddLots(userID string, quantity string) error {
 	const op = "storage.JacuteSQL.SaveLot"
 
-	err := s.Exec("INSERT INTO lot  VALUES ('?', '?', '?')", userID, lotID, quantity)
+	data, err := s.Query("SELECT lot.lot_pk FROM lot")
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
+	}
+	fmt.Println(data)
+
+	for _, row := range data {
+		err := s.Exec("INSERT INTO user_lot VALUES ('?', '?', '?')", userID, row["lot.lot_pk"], quantity)
+		if err != nil {
+			return fmt.Errorf("%s: %w", op, err)
+		}
 	}
 
 	return nil

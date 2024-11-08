@@ -85,6 +85,10 @@ func (s *Storage) write(data string) (string, error) {
 		return "", fmt.Errorf("%s: %w", op, storage.ErrSQLExecFailed)
 	}
 
+	// if !strings.Contains(output, "Incorrect number of columns") {
+	// 	return "", fmt.Errorf("%s: %w", op, storage.ErrIncorrectNumberOfColumns)
+	// }
+
 	return output, nil
 }
 

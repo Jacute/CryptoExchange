@@ -25,7 +25,7 @@ type Response struct {
 
 type UserProvider interface {
 	SaveUser(username string, token string) (string, error)
-	SaveLot(userID string, lotID string, quantity string) error
+	AddLots(userID string, quantity string) error
 }
 
 func New(log *slog.Logger, userProvider UserProvider, tokenLen int) http.HandlerFunc {
@@ -60,11 +60,16 @@ func New(log *slog.Logger, userProvider UserProvider, tokenLen int) http.Handler
 				return
 			}
 			log.Error("failed to save user", prettylogger.Err(err))
-			render.JSON(w, r, response.Error("internal error"))
+			render.JSON(w, r, response.Error("error saving user"))
 			return
 		}
 
-		// TODO: add create lots
+		err = userProvider.AddLots(id, "1000")
+		if err != nil {
+			log.Error("failed to save lot", prettylogger.Err(err))
+			render.JSON(w, r, response.Error("error creating lots for user"))
+			return
+		}
 
 		log.Info("user created")
 		render.JSON(w, r, Response{
