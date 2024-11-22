@@ -1,7 +1,7 @@
 package user_test
 
 import (
-	"JacuteCE/tests/suite"
+	"CryptoExchange/tests/suite"
 	"encoding/json"
 	"fmt"
 	"io"

@@ -10,7 +10,7 @@ import (
 const (
 	envLocal = "local"
 	envProd  = "prod"
-	logPath  = "JacuteCE.log"
+	logPath  = "CryptoExchange.log"
 )
 
 type Logger struct {

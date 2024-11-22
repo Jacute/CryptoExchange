@@ -10,9 +10,10 @@ import (
 
 // New creates a logger middleware
 func New(log *slog.Logger) func(next http.Handler) http.Handler {
+	const op = "middlewares.logger.New"
 	return func(next http.Handler) http.Handler {
 		log = log.With(
-			slog.String("op", "middlewares.logger.New"),
+			slog.String("op", op),
 		)
 
 		log.Info("Logger middleware enabled")

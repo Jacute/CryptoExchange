@@ -1,7 +1,7 @@
 package jacutesql
 
 import (
-	"JacuteCE/internal/storage"
+	"CryptoExchange/internal/storage"
 	"fmt"
 	"net"
 	"regexp"
@@ -16,13 +16,14 @@ const (
 const ExecutedCommandOutput = "command executed successfully"
 
 var (
-	InsertMaliciousRegexp = regexp.MustCompile("[" + regexp.QuoteMeta(".,'()=") + "]")
-	SelectMaliciousRegexp = regexp.MustCompile("(?i)\b(AND|OR)\b|[" + regexp.QuoteMeta("'=.,") + "]")
+	InsertMaliciousRegexp = regexp.MustCompile("[" + regexp.QuoteMeta(",'()=") + "]")
+	SelectMaliciousRegexp = regexp.MustCompile("(?i)\b(AND|OR)\b|[" + regexp.QuoteMeta("'=,") + "]")
 )
 
 var (
 	InsertStartsWithRegexp = regexp.MustCompile(`(?i)^INSERT\s+INTO`)
 	SelectStartsWithRegexp = regexp.MustCompile(`(?i)^SELECT`)
+	DeleteStartsWithRegexp = regexp.MustCompile(`(?i)^DELETE\s+FROM`)
 )
 
 type Storage struct {
@@ -98,11 +99,14 @@ func (s *Storage) argSanitize(query string, args ...string) (string, error) {
 		commandType = InsertType
 	} else if SelectStartsWithRegexp.MatchString(query) {
 		commandType = SelectType
+	} else if DeleteStartsWithRegexp.MatchString(query) {
+		commandType = DeleteType
 	} else {
 		return "", storage.ErrInvalidSQLCommand
 	}
 
 	if strings.Count(query, "?") != len(args) {
+		fmt.Println(3)
 		return "", storage.ErrInvalidSQLCommand
 	}
 
@@ -111,7 +115,7 @@ func (s *Storage) argSanitize(query string, args ...string) (string, error) {
 			if InsertMaliciousRegexp.MatchString(arg) {
 				return "", fmt.Errorf("%w. argument: %s", storage.ErrMaliciousParameter, arg)
 			}
-		} else if commandType == SelectType {
+		} else if commandType == SelectType || commandType == DeleteType {
 			if SelectMaliciousRegexp.MatchString(arg) {
 				return "", fmt.Errorf("%w. argument: %s", storage.ErrMaliciousParameter, arg)
 			}
@@ -122,8 +126,8 @@ func (s *Storage) argSanitize(query string, args ...string) (string, error) {
 	return query, nil
 }
 
-func (s *Storage) Exec(query string, args ...string) error {
-	const op = "storage.JacuteSQL.exec"
+func (s *Storage) Delete(query string, args ...string) error {
+	const op = "storage.JacuteSQL.Exec"
 
 	newQuery, err := s.argSanitize(query, args...)
 	if err != nil {
@@ -136,6 +140,29 @@ func (s *Storage) Exec(query string, args ...string) error {
 	}
 
 	return nil
+}
+
+func (s *Storage) Insert(query string, args ...string) (string, error) {
+	const op = "storage.JacuteSQL.Exec"
+
+	newQuery, err := s.argSanitize(query, args...)
+	if err != nil {
+		return "", fmt.Errorf("%s: %w", op, err)
+	}
+
+	output, err := s.write(newQuery)
+	if err != nil {
+		return "", fmt.Errorf("%s: %w", op, err)
+	}
+
+	splitted := strings.Split(output, "\n")
+	splitted = splitted[2 : len(splitted)-1]
+
+	if splitted[0] == "" {
+		return "", fmt.Errorf("%s: %s", op, "failed to insert")
+	}
+
+	return splitted[0], nil
 }
 
 func (s *Storage) Query(query string, args ...string) ([]map[string]string, error) {
@@ -151,10 +178,10 @@ func (s *Storage) Query(query string, args ...string) ([]map[string]string, erro
 		return nil, err
 	}
 	rows := strings.Split(output, "\n")
-	if len(rows) == 2 {
+	if len(rows) == 3 {
 		return []map[string]string{}, nil
 	}
-	rows = rows[2 : len(rows)-1] // remove user-friendly interface strings
+	rows = rows[2 : len(rows)-2] // remove user-friendly interface strings
 	header := strings.Split(rows[0], ",")
 	rows = rows[1:] // remove header
 	table := make([]map[string]string, len(rows))
@@ -174,7 +201,7 @@ func (s *Storage) Query(query string, args ...string) ([]map[string]string, erro
 func (s *Storage) Destroy() error {
 	const op = "storage.JacuteSQL.Destroy"
 
-	err := s.Exec("DELETE FROM lot, pair, user, user_lot, order")
+	err := s.Delete("DELETE FROM lot, pair, user, user_lot, order")
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
@@ -199,7 +226,7 @@ func (s *Storage) MakeMigrations(lots []string) {
 	}
 	if len(table) == 0 {
 		for _, lot := range lots {
-			err := s.Exec("INSERT INTO lot VALUES ('?')", lot)
+			_, err := s.Insert("INSERT INTO lot VALUES ('?')", lot)
 			if err != nil {
 				panic(err)
 			}
@@ -219,7 +246,11 @@ func (s *Storage) MakeMigrations(lots []string) {
 			panic(err)
 		}
 		for i := 0; i < len(lots); i++ {
-			for j := i + 1; j < len(lots); j++ {
+			for j := 0; j < len(lots); j++ {
+				if i == j {
+					continue
+				}
+
 				firstLotID := s.getIDByParam(table, "lot.lot_pk", "lot.name", lots[i])
 				secondLotID := s.getIDByParam(table, "lot.lot_pk", "lot.name", lots[j])
 				if firstLotID == "" {
@@ -229,7 +260,7 @@ func (s *Storage) MakeMigrations(lots []string) {
 					panic(fmt.Sprintf("can't find id for %s", lots[j]))
 				}
 
-				err := s.Exec("INSERT INTO pair VALUES ('?', '?')", firstLotID, secondLotID)
+				_, err := s.Insert("INSERT INTO pair VALUES ('?', '?')", firstLotID, secondLotID)
 				if err != nil {
 					panic(err)
 				}

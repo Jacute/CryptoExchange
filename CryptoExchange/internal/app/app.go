@@ -1,11 +1,18 @@
 package app
 
 import (
-	"JacuteCE/internal/config"
-	"JacuteCE/internal/http/handlers/user"
-	mwlogger "JacuteCE/internal/http/middlewares/logger"
-	mwrecoverer "JacuteCE/internal/http/middlewares/recoverer"
-	jacutesql "JacuteCE/internal/storage/JacuteSQL"
+	"CryptoExchange/internal/config"
+	"CryptoExchange/internal/http/handlers/balance"
+	"CryptoExchange/internal/http/handlers/lot"
+	orderdelete "CryptoExchange/internal/http/handlers/order/delete"
+	orderget "CryptoExchange/internal/http/handlers/order/get"
+	orderpost "CryptoExchange/internal/http/handlers/order/post"
+	"CryptoExchange/internal/http/handlers/pair"
+	"CryptoExchange/internal/http/handlers/user"
+	mwauth "CryptoExchange/internal/http/middlewares/auth"
+	mwlogger "CryptoExchange/internal/http/middlewares/logger"
+	mwrecoverer "CryptoExchange/internal/http/middlewares/recoverer"
+	jacutesql "CryptoExchange/internal/storage/JacuteSQL"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -40,6 +47,12 @@ func (a *App) SetupRouter() http.Handler {
 	router.Use(loggerMiddleware)
 
 	router.Post("/user", user.New(a.log, a.db, a.cfg.TokenLen))
+	router.Get("/lot", lot.New(a.log, a.db))
+	router.Get("/pair", pair.New(a.log, a.db))
+	router.Get("/order", orderget.New(a.log, a.db))
+	router.With(mwauth.New(a.log, a.db)).Post("/order", orderpost.New(a.log, a.db, a.db, a.db))
+	router.With(mwauth.New(a.log, a.db)).Delete("/order", orderdelete.New(a.log, a.db, a.db, a.db, a.db))
+	router.With(mwauth.New(a.log, a.db)).Get("/balance", balance.New(a.log, a.db))
 
 	return router
 }

@@ -10,9 +10,10 @@ import (
 
 // New returns a recoverer middleware handler, need for recover from panic
 func New(log *slog.Logger) func(next http.Handler) http.Handler {
+	const op = "middlewares.recoverer.New"
 	return func(next http.Handler) http.Handler {
 		log = log.With(
-			slog.String("op", "middlewares.recoverer.New"),
+			slog.String("op", op),
 		)
 
 		log.Info("Recoverer middleware enabled")

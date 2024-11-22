@@ -1,9 +1,9 @@
 package suite
 
 import (
-	"JacuteCE/internal/app"
-	"JacuteCE/internal/config"
-	jacutesql "JacuteCE/internal/storage/JacuteSQL"
+	"CryptoExchange/internal/app"
+	"CryptoExchange/internal/config"
+	jacutesql "CryptoExchange/internal/storage/JacuteSQL"
 	"log/slog"
 	"time"
 

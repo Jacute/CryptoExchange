@@ -9,5 +9,10 @@ var (
 	ErrConnect                  = errors.New("database connection error")
 	ErrIncorrectNumberOfColumns = errors.New("invalid number of columns")
 
-	ErrUserExists = errors.New("user already exists")
+	ErrUserExists   = errors.New("user already exists")
+	ErrUserNotFound = errors.New("user not found")
+
+	ErrPairNotFound   = errors.New("pair not found")
+	ErrOrderNotFound  = errors.New("order not found")
+	ErrNotEnoughMoney = errors.New("not enough money")
 )

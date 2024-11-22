@@ -1,5 +1,3 @@
-version: '3'
-
 services:
   jacutesql:
     container_name: jacutesql
@@ -11,3 +9,9 @@ services:
       - ./JacuteSQL/schema.json:/app/schema.json:ro
       - ./JacuteSQL/config/config.yaml:/app/config/config.yaml:ro
       - ./JacuteSQL/storage/:/app/storage/
+    networks:
+      - cryptoexchange
+
+networks:
+  cryptoexchange:
+    driver: bridge

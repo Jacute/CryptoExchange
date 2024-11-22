@@ -1,8 +1,10 @@
 package jacutesql
 
 import (
-	"JacuteCE/internal/storage"
+	"CryptoExchange/internal/models"
+	"CryptoExchange/internal/storage"
 	"fmt"
+	"strconv"
 )
 
 func (s *Storage) SaveUser(username string, token string) (string, error) {
@@ -17,9 +19,9 @@ func (s *Storage) SaveUser(username string, token string) (string, error) {
 		return "", fmt.Errorf("%s: %w", op, storage.ErrUserExists)
 	}
 
-	// TODO: fix the race condition here
+	// race condition
 
-	err = s.Exec("INSERT INTO user VALUES ('?', '?')", username, token)
+	_, err = s.Insert("INSERT INTO user VALUES ('?', '?')", username, token)
 	if err != nil {
 		return "", fmt.Errorf("%s: %w", op, err)
 	}
@@ -40,21 +42,25 @@ func (s *Storage) SaveUser(username string, token string) (string, error) {
 	return id, nil
 }
 
-func (s *Storage) AddLots(userID string, quantity string) error {
-	const op = "storage.JacuteSQL.SaveLot"
+func (s *Storage) GetUserByToken(token string) (*models.User, error) {
+	const op = "storage.JacuteSQL.GetUserByToken"
 
-	data, err := s.Query("SELECT lot.lot_pk FROM lot")
+	data, err := s.Query("SELECT user.user_pk, user.username, user.token FROM user WHERE user.token = '?'", token)
 	if err != nil {
-		return fmt.Errorf("%s: %w", op, err)
-	}
-	fmt.Println(data)
-
-	for _, row := range data {
-		err := s.Exec("INSERT INTO user_lot VALUES ('?', '?', '?')", userID, row["lot.lot_pk"], quantity)
-		if err != nil {
-			return fmt.Errorf("%s: %w", op, err)
-		}
+		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
-	return nil
+	if len(data) == 0 {
+		return nil, fmt.Errorf("%s: %w", op, storage.ErrUserNotFound)
+	}
+	id, err := strconv.Atoi(data[0]["user.user_pk"])
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return &models.User{
+		ID:       id,
+		Username: data[0]["user.username"],
+		Token:    data[0]["user.token"],
+	}, nil
 }

@@ -1,10 +1,10 @@
 package main
 
 import (
-	"JacuteCE/internal/app"
-	"JacuteCE/internal/config"
-	"JacuteCE/internal/logger"
-	jacutesql "JacuteCE/internal/storage/JacuteSQL"
+	"CryptoExchange/internal/app"
+	"CryptoExchange/internal/config"
+	"CryptoExchange/internal/logger"
+	jacutesql "CryptoExchange/internal/storage/JacuteSQL"
 	"log/slog"
 	"os"
 	"os/signal"

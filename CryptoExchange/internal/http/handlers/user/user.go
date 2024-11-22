@@ -1,9 +1,9 @@
 package user
 
 import (
-	"JacuteCE/internal/lib/api/response"
-	"JacuteCE/internal/lib/utils"
-	"JacuteCE/internal/storage"
+	"CryptoExchange/internal/lib/api/response"
+	"CryptoExchange/internal/lib/utils"
+	"CryptoExchange/internal/storage"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -29,8 +29,8 @@ type UserProvider interface {
 }
 
 func New(log *slog.Logger, userProvider UserProvider, tokenLen int) http.HandlerFunc {
+	const op = "handlers.user.New"
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "handlers.user.New"
 		log = log.With(
 			slog.String("op", op),
 			slog.String("request_id", middleware.GetReqID(r.Context())),
