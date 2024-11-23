@@ -14,5 +14,6 @@ var (
 
 	ErrPairNotFound   = errors.New("pair not found")
 	ErrOrderNotFound  = errors.New("order not found")
+	ErrLotNotFound    = errors.New("lot not found")
 	ErrNotEnoughMoney = errors.New("not enough money")
 )

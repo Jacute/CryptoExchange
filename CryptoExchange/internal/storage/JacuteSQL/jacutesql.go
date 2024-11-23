@@ -106,7 +106,6 @@ func (s *Storage) argSanitize(query string, args ...string) (string, error) {
 	}
 
 	if strings.Count(query, "?") != len(args) {
-		fmt.Println(3)
 		return "", storage.ErrInvalidSQLCommand
 	}
 
@@ -241,7 +240,6 @@ func (s *Storage) MakeMigrations(lots []string) {
 
 	if len(table) == 0 {
 		table, err := s.Query("SELECT lot.lot_pk, lot.name FROM lot")
-		fmt.Println(table)
 		if err != nil {
 			panic(err)
 		}

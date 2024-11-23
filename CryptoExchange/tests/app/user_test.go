@@ -1,4 +1,4 @@
-package user_test
+package app_test
 
 import (
 	"CryptoExchange/tests/suite"
@@ -45,21 +45,7 @@ func TestUser(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.Name, func(tt *testing.T) {
-			reqBody := fmt.Sprintf(`{"username": "%s"}`, c.Username)
-			req, err := http.NewRequest(http.MethodPost, server.URL+"/user", strings.NewReader(reqBody))
-			require.NoError(tt, err)
-			req.Header.Set("Content-Type", "application/json")
-
-			res, err := client.Do(req)
-			require.NoError(tt, err)
-			defer res.Body.Close()
-			require.Equal(tt, res.StatusCode, http.StatusOK)
-
-			output, err := io.ReadAll(res.Body)
-			require.NoError(tt, err)
-			var response map[string]string
-			err = json.Unmarshal(output, &response)
-			require.NoError(tt, err)
+			response := RegisterUser(tt, c.Username, server, client)
 
 			if c.Err == "" {
 				require.Equal(tt, "", response["error"])
@@ -114,4 +100,25 @@ func TestUserParallel(t *testing.T) {
 		}()
 	}
 	wg.Wait()
+}
+
+func RegisterUser(tt *testing.T, username string, server *httptest.Server, client *http.Client) map[string]string {
+	reqBody := fmt.Sprintf(`{"username": "%s"}`, username)
+	req, err := http.NewRequest(http.MethodPost, server.URL+"/user", strings.NewReader(reqBody))
+	require.NoError(tt, err)
+	req.Header.Set("Content-Type", "application/json")
+
+	res, err := client.Do(req)
+	require.NoError(tt, err)
+	defer res.Body.Close()
+	require.Equal(tt, res.StatusCode, http.StatusOK)
+
+	body, err := io.ReadAll(res.Body)
+	require.NoError(tt, err)
+
+	var data map[string]string
+	err = json.Unmarshal(body, &data)
+	require.NoError(tt, err)
+
+	return data
 }

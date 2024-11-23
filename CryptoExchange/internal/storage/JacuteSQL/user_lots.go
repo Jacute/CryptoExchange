@@ -35,7 +35,34 @@ func (s *Storage) GetUserLots(userID string) ([]*models.UserLot, error) {
 	return result, nil
 }
 
-func (s *Storage) Pay(userID, lotID string, price float64) (string, error) {
+func (s *Storage) GetUserLot(userID, lotID string) (*models.UserLot, error) {
+	const op = "storage.JacuteSQL.GetUserLotByUserID"
+
+	data, err := s.Query("SELECT user_lot.lot_id, user_lot.quantity FROM user_lot WHERE user_lot.user_id = '?' AND user_lot.lot_id = '?'", userID, lotID)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	if len(data) == 0 {
+		return nil, storage.ErrLotNotFound
+	}
+
+	newLotID, err := strconv.Atoi(data[0]["user_lot.lot_id"])
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+	quantity, err := strconv.ParseFloat(data[0]["user_lot.quantity"], 64)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return &models.UserLot{
+		LotID:    newLotID,
+		Quantity: quantity,
+	}, nil
+}
+
+func (s *Storage) Pay(userID, lotID string, quantity float64) (string, error) {
 	const op = "storage.JacuteSQL.Pay"
 
 	// race condition
@@ -48,10 +75,10 @@ func (s *Storage) Pay(userID, lotID string, price float64) (string, error) {
 		return "", fmt.Errorf("%s: %w", op, err)
 	}
 
-	if curQuantity < price {
+	if curQuantity < quantity {
 		return "", storage.ErrNotEnoughMoney
 	}
-	newQuantity := curQuantity - price
+	newQuantity := curQuantity - quantity
 
 	err = s.Delete("DELETE FROM user_lot WHERE user_lot.user_id = '?' AND user_lot.lot_id = '?'", userID, lotID)
 	if err != nil {

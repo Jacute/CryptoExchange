@@ -5,6 +5,7 @@ import (
 	"CryptoExchange/internal/config"
 	jacutesql "CryptoExchange/internal/storage/JacuteSQL"
 	"log/slog"
+	"os"
 	"time"
 
 	"github.com/jacute/prettylogger"
@@ -31,7 +32,8 @@ func New() *Suite {
 	db.Destroy()
 	db.MakeMigrations(lots)
 
-	application := app.New(cfg, slog.New(prettylogger.NewDiscardHandler()), db)
+	application := app.New(cfg, slog.New(prettylogger.NewColoredHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo})), db)
+	// application := app.New(cfg, slog.New(prettylogger.NewDiscardHandler()), db)
 
 	return &Suite{
 		App: application,
