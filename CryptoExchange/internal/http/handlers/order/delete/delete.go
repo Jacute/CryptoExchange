@@ -15,6 +15,10 @@ import (
 	"github.com/jacute/prettylogger"
 )
 
+var (
+	ErrNotYourOrder = response.Error("you do not own this order")
+)
+
 type OrderDeleter interface {
 	DeleteOrder(orderID string) error
 }
@@ -74,7 +78,7 @@ func New(log *slog.Logger, orderDeleter OrderDeleter, orderProvider OrderProvide
 
 		if order.UserID != user.ID {
 			log.Warn("user does not own the order")
-			render.JSON(w, r, response.Error("you do not own this order"))
+			render.JSON(w, r, ErrNotYourOrder)
 			return
 		}
 
@@ -93,7 +97,7 @@ func New(log *slog.Logger, orderDeleter OrderDeleter, orderProvider OrderProvide
 		}
 
 		if order.Type == "buy" {
-			_, err := moneyAdder.AddMoney(strconv.Itoa(user.ID), strconv.Itoa(pair.BuyLotID), order.Price)
+			_, err := moneyAdder.AddMoney(strconv.Itoa(user.ID), strconv.Itoa(pair.SellLotID), order.Quantity)
 			if err != nil {
 				log.Error("cannot return money to user", prettylogger.Err(err))
 				render.JSON(w, r, response.Error("failed to return money to user"))
