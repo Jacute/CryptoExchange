@@ -64,3 +64,21 @@ func (s *Storage) GetUserByToken(token string) (*models.User, error) {
 		Token:    data[0]["user.token"],
 	}, nil
 }
+
+func (s *Storage) EnoughQuantity(userID, lotID int, neededQuantity float64) (bool, error) {
+	data, _ := s.Query("SELECT user_lot.quantity FROM user_lot WHERE user.user_id = '?' AND user.lot_id = '?'", strconv.Itoa(userID), strconv.Itoa(lotID))
+	if len(data) == 0 {
+		return false, fmt.Errorf("can't find lot")
+	}
+
+	curQuantity, err := strconv.ParseFloat(data[0]["user_lot.quantity"], 64)
+	if err != nil {
+		return false, fmt.Errorf("can't parse user lot quantity: %w", err)
+	}
+
+	if curQuantity < neededQuantity {
+		return false, nil
+	}
+
+	return true, nil
+}

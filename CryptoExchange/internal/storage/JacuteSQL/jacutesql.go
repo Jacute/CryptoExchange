@@ -190,6 +190,9 @@ func (s *Storage) Query(query string, args ...string) ([]map[string]string, erro
 			if table[i] == nil {
 				table[i] = make(map[string]string)
 			}
+			if len(header) != len(cols) {
+				return nil, fmt.Errorf("incorrect header")
+			}
 			table[i][header[j]] = cols[j]
 		}
 	}

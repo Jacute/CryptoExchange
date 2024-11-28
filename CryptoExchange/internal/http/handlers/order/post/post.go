@@ -21,7 +21,8 @@ type OrderSaver interface {
 
 type UserPayer interface {
 	Pay(userID, lotID string, price float64) (string, error)
-	GetOrderForOperation(price float64, pairID, orderType string) (*models.Order, error)
+	EnoughQuantity(userID, lotID int, neededQuantity float64) (bool, error)
+	GetOrderForOperation(price float64, pairID, orderType string, userID int) (*models.Order, error)
 	Buy(buyerOrder *models.Order, sellerOrder *models.Order) error
 }
 
@@ -126,7 +127,7 @@ func New(log *slog.Logger, orderSaver OrderSaver, userPayer UserPayer, pairProvi
 				return
 			}
 
-			sellerOrder, err := userPayer.GetOrderForOperation(req.Price, strconv.Itoa(pair.ID), "sell")
+			sellerOrder, err := userPayer.GetOrderForOperation(req.Price, strconv.Itoa(pair.ID), "sell", user.ID)
 			if err != nil {
 				if errors.Is(err, storage.ErrOrderNotFound) {
 					log.Info("order created successfully, but seller not found yet")
@@ -136,8 +137,8 @@ func New(log *slog.Logger, orderSaver OrderSaver, userPayer UserPayer, pairProvi
 					})
 					return
 				}
-				log.Error("error checking for buying", prettylogger.Err(err))
-				render.JSON(w, r, response.Error("error checking for buying"))
+				log.Error("error finding seller", prettylogger.Err(err))
+				render.JSON(w, r, response.Error("error finding seller"))
 				return
 			}
 			err = userPayer.Buy(myOrder, sellerOrder)
@@ -147,7 +148,18 @@ func New(log *slog.Logger, orderSaver OrderSaver, userPayer UserPayer, pairProvi
 				return
 			}
 		} else {
-			buyerOrder, err := userPayer.GetOrderForOperation(req.Price, strconv.Itoa(pair.ID), "buy")
+			_, err := userPayer.Pay(strconv.Itoa(user.ID), strconv.Itoa(pair.BuyLotID), req.Quantity)
+			if err != nil {
+				if errors.Is(err, storage.ErrNotEnoughMoney) {
+					render.JSON(w, r, response.Error("not enough money"))
+					return
+				}
+				log.Error("error paying user", prettylogger.Err(err))
+				render.JSON(w, r, response.Error("error paying user"))
+				return
+			}
+
+			buyerOrder, err := userPayer.GetOrderForOperation(req.Price, strconv.Itoa(pair.ID), "buy", user.ID)
 			if err != nil {
 				if errors.Is(err, storage.ErrOrderNotFound) {
 					log.Info("order created successfully, but buyer not found yet")
@@ -157,8 +169,8 @@ func New(log *slog.Logger, orderSaver OrderSaver, userPayer UserPayer, pairProvi
 					})
 					return
 				}
-				log.Error("error checking for buying", prettylogger.Err(err))
-				render.JSON(w, r, response.Error("error checking for buying"))
+				log.Error("error finding buyer", prettylogger.Err(err))
+				render.JSON(w, r, response.Error("error finding buyer"))
 				return
 			}
 			err = userPayer.Buy(buyerOrder, myOrder)

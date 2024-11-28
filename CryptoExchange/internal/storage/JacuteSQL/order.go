@@ -128,7 +128,7 @@ func (s *Storage) DeleteOrder(orderID string) error {
 	return nil
 }
 
-func (s *Storage) GetOrderForOperation(price float64, pairID, orderType string) (*models.Order, error) {
+func (s *Storage) GetOrderForOperation(price float64, pairID, orderType string, opUserID int) (*models.Order, error) {
 	const op = "storage.JacuteSQL.CheckForBuying"
 
 	data, err := s.Query("SELECT order.order_pk, order.user_id, order.pair_id, order.quantity, order.price, order.type, order.closed FROM order WHERE order.type = '?' AND order.pair_id = '?'", orderType, pairID)
@@ -172,14 +172,15 @@ func (s *Storage) GetOrderForOperation(price float64, pairID, orderType string) 
 			Type:     row["order.type"],
 			Closed:   row["order.closed"],
 		}
-		fmt.Println(order, price)
-		if orderType == "buy" {
-			if order.Price >= price {
-				return order, nil
-			}
-		} else {
-			if order.Price <= price {
-				return order, nil
+		if opUserID != order.UserID {
+			if orderType == "buy" {
+				if order.Price >= price {
+					return order, nil
+				}
+			} else {
+				if order.Price <= price {
+					return order, nil
+				}
 			}
 		}
 	}
@@ -208,7 +209,6 @@ func (s *Storage) Buy(buyerOrder *models.Order, sellerOrder *models.Order) error
 	sellerID := strconv.Itoa(sellerOrder.UserID)
 	sellLotID := strconv.Itoa(pair.SellLotID)
 
-	fmt.Println(1, buyerOrder.Quantity, sellerOrder.Quantity)
 	if buyerOrder.Quantity > sellerOrder.Quantity {
 		// deposit lot to the buyer account
 		_, err = s.AddMoney(buyerID, buyLotID, sellerOrder.Quantity)
@@ -225,7 +225,6 @@ func (s *Storage) Buy(buyerOrder *models.Order, sellerOrder *models.Order) error
 			}
 		}
 		s.AddMoney(sellerID, sellLotID, sellerOrder.Quantity*sellerOrder.Price)
-		s.Pay(sellerID, buyLotID, sellerOrder.Quantity)
 
 		diff := buyerOrder.Quantity - sellerOrder.Quantity
 
@@ -239,11 +238,6 @@ func (s *Storage) Buy(buyerOrder *models.Order, sellerOrder *models.Order) error
 		})
 		if err != nil {
 			return fmt.Errorf("%s: can't create new order for buyer: %w", op, err)
-		}
-		// close seller order
-		_, err = s.SaveOrder(sellerOrder)
-		if err != nil {
-			return fmt.Errorf("%s: %w", op, err)
 		}
 	} else if sellerOrder.Quantity >= buyerOrder.Quantity {
 		// deposit lot to the buyer account
@@ -261,7 +255,6 @@ func (s *Storage) Buy(buyerOrder *models.Order, sellerOrder *models.Order) error
 			}
 		}
 		s.AddMoney(sellerID, sellLotID, buyerOrder.Quantity*sellerOrder.Price)
-		s.Pay(sellerID, buyLotID, buyerOrder.Quantity)
 
 		if sellerOrder.Quantity > buyerOrder.Quantity {
 			diff := sellerOrder.Quantity - buyerOrder.Quantity
@@ -277,23 +270,16 @@ func (s *Storage) Buy(buyerOrder *models.Order, sellerOrder *models.Order) error
 			if err != nil {
 				return fmt.Errorf("%s: can't create new order for seller: %w", op, err)
 			}
-
-			// close buyer order
-			_, err = s.SaveOrder(buyerOrder)
-			if err != nil {
-				return fmt.Errorf("%s: %w", op, err)
-			}
-		} else {
-			// close orders
-			_, err = s.SaveOrder(sellerOrder)
-			if err != nil {
-				return fmt.Errorf("%s: %w", op, err)
-			}
-			_, err = s.SaveOrder(buyerOrder)
-			if err != nil {
-				return fmt.Errorf("%s: %w", op, err)
-			}
 		}
+	}
+	// close orders
+	_, err = s.SaveOrder(sellerOrder)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+	_, err = s.SaveOrder(buyerOrder)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
 	}
 	return nil
 }

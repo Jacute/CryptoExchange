@@ -132,7 +132,7 @@ func TestOrderPost_BuyAfterSell(t *testing.T) {
 	balance := Balance(t, client, server, sellerToken)
 	for _, lot := range balance {
 		if lot.LotID == buyLotID {
-			require.Equal(t, 1000.0, lot.Quantity)
+			require.Equal(t, 992.3, lot.Quantity)
 		} else if lot.LotID == sellLotID {
 			require.Equal(t, 1000.0, lot.Quantity)
 		}
@@ -173,7 +173,7 @@ func TestOrderPost_BuyAfterSell(t *testing.T) {
 	balance = Balance(t, client, server, sellerToken)
 	for _, lot := range balance {
 		if lot.LotID == buyLotID {
-			require.Equal(t, 995.0, lot.Quantity)
+			require.Equal(t, 992.3, lot.Quantity)
 		} else if lot.LotID == sellLotID {
 			require.Equal(t, 1112.5, lot.Quantity)
 		}

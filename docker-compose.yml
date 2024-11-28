@@ -9,9 +9,17 @@ services:
       - ./JacuteSQL/schema.json:/app/schema.json:ro
       - ./JacuteSQL/config/config.yaml:/app/config/config.yaml:ro
       - ./JacuteSQL/storage/:/app/storage/
-    networks:
-      - cryptoexchange
-
-networks:
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "7432"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
   cryptoexchange:
-    driver: bridge
+    container_name: cryptoexchange
+    build: CryptoExchange
+    restart: on-failure
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      - jacutesql

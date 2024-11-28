@@ -97,7 +97,14 @@ func New(log *slog.Logger, orderDeleter OrderDeleter, orderProvider OrderProvide
 		}
 
 		if order.Type == "buy" {
-			_, err := moneyAdder.AddMoney(strconv.Itoa(user.ID), strconv.Itoa(pair.SellLotID), order.Quantity)
+			_, err := moneyAdder.AddMoney(strconv.Itoa(user.ID), strconv.Itoa(pair.SellLotID), order.Quantity*order.Price)
+			if err != nil {
+				log.Error("cannot return money to user", prettylogger.Err(err))
+				render.JSON(w, r, response.Error("failed to return money to user"))
+				return
+			}
+		} else {
+			_, err := moneyAdder.AddMoney(strconv.Itoa(user.ID), strconv.Itoa(pair.BuyLotID), order.Quantity)
 			if err != nil {
 				log.Error("cannot return money to user", prettylogger.Err(err))
 				render.JSON(w, r, response.Error("failed to return money to user"))
