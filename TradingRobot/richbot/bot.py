@@ -3,6 +3,7 @@ import pprint
 import asyncio
 
 from api.api import CryptoExchangeAPI, rub_courses, pairs
+from utils import count_rubles
 
 
 class RichBot:
@@ -13,18 +14,14 @@ class RichBot:
     
     async def start(self):
         self.bot_id, token = self.api.register('richbot', 10)
+        balance = self.api.get_balance()
+        print(balance)
+        print(count_rubles(balance))
         print("Token:", token)
-        await asyncio.gather(self.bot_cycle(), self.balance_monitor())
-        
-    async def balance_monitor(self):
-        while True:
-            balance = self.api.get_balance()
-            print("RichBot balance:")
-            pprint.pprint(balance)
-            await asyncio.sleep(60)
+        await asyncio.gather(self.bot_cycle())
             
     async def bot_cycle(self):
-        while True:
+        for i in range(5):
             orders = self.api.get_orders()
             
             for order in orders:
@@ -78,6 +75,9 @@ class RichBot:
                                 print("Order sold. ID:", id, "Pair ID:", pair_id, "Quantity:", quantity, "Price:", price)
                                 self.checked_order_ids.append(id)
             await asyncio.sleep(self.timeout)
+        balance = self.api.get_balance()
+        print(balance)
+        print(count_rubles(balance))
 
 
 def start_bot(host: str, port: int, timeout: int):

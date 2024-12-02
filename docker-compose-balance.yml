@@ -1,0 +1,39 @@
+services:
+  jacutesql:
+    container_name: jacutesql
+    build: JacuteSQL
+    restart: on-failure
+    ports:
+      - "127.0.0.1:7432:7432"
+    volumes:
+      - ./JacuteSQL/schema.json:/app/schema.json:ro
+      - ./JacuteSQL/config/config.yaml:/app/config/config.yaml:ro
+      - ./JacuteSQL/storage/:/app/storage/
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "7432"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  cryptoexchange:
+    build: CryptoExchange
+    depends_on:
+      - jacutesql
+    deploy:
+      replicas: 4
+      restart_policy:
+        condition: on-failure
+      update_config:
+        parallelism: 2
+        delay: 10s
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx
+    ports:
+      - "80:80"
+    depends_on:
+      - cryptoexchange
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
