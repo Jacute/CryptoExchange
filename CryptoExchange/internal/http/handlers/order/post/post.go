@@ -39,7 +39,8 @@ type Request struct {
 
 type Response struct {
 	response.Response
-	OrderID int `json:"order_id"`
+	OrderID int    `json:"order_id"`
+	Message string `json:"message,omitempty"`
 }
 
 func New(log *slog.Logger, orderSaver OrderSaver, userPayer UserPayer, pairProvider PairProvider) http.HandlerFunc {
@@ -134,6 +135,7 @@ func New(log *slog.Logger, orderSaver OrderSaver, userPayer UserPayer, pairProvi
 					render.JSON(w, r, &Response{
 						Response: response.OK(),
 						OrderID:  id,
+						Message:  "order created, buy seller not found yet",
 					})
 					return
 				}
@@ -166,6 +168,7 @@ func New(log *slog.Logger, orderSaver OrderSaver, userPayer UserPayer, pairProvi
 					render.JSON(w, r, &Response{
 						Response: response.OK(),
 						OrderID:  id,
+						Message:  "order created, buy buyer not found yet",
 					})
 					return
 				}

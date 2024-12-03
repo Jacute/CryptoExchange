@@ -10,7 +10,7 @@ def main():
     def add_common_arguments(subparser):
         subparser.add_argument("--host", required=True, help="Хост для подключения")
         subparser.add_argument("--port", required=True, type=int, help="Порт для подключения")
-        subparser.add_argument("--timeout", type=int, default=10, help="Таймаут работы бота")
+        subparser.add_argument("--timeout", type=float, default=10, help="Таймаут работы бота")
 
     parser_sellbot = subparsers.add_parser("randombot", help="Запуск randombot")
     add_common_arguments(parser_sellbot)

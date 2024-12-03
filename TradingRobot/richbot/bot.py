@@ -14,14 +14,16 @@ class RichBot:
     
     async def start(self):
         self.bot_id, token = self.api.register('richbot', 10)
+        print("Token:", token)
+        
         balance = self.api.get_balance()
         print(balance)
         print(count_rubles(balance))
-        print("Token:", token)
+        
         await asyncio.gather(self.bot_cycle())
             
     async def bot_cycle(self):
-        for i in range(5):
+        for _ in range(10):
             orders = self.api.get_orders()
             
             for order in orders:
@@ -41,35 +43,29 @@ class RichBot:
                 
                 if closed == "0" and user_id != self.bot_id:
                     if op_type == 'sell':
-                        if sell_lot == 'RUB' and price < rub_courses[buy_lot]: # buy any wallet for rubles
-                            pass
-                            # result = self.api.create_order(pair_id, quantity, price, "buy")
-                            # if result["status"] == "OK":
-                            #     print("Order bought. ID:", id)
-                            #     self.checked_order_ids.append(id)
-                        elif buy_lot == 'RUB' and price > rub_courses[sell_lot]: # buy rubles for any wallet
-                            result = self.api.create_order(pair_id, quantity, price, "buy")
-                            if result["status"] == "OK":
-                                print("Order bought. ID:", id, "Pair ID:", pair_id, "Quantity:", quantity, "Price:", price)
+                        if sell_lot == 'RUB' or buy_lot == 'RUB':
+                            if sell_lot == 'RUB' and price < rub_courses[buy_lot]: # buy any wallet for rubles
+                                pass
+                            elif buy_lot == 'RUB' and price > rub_courses[sell_lot]: # buy rubles for any wallet
+                                result = self.api.create_order(pair_id, quantity, price, "buy")
+                                if result["status"] == "OK":
+                                    print("Order bought. ID:", id, "Pair ID:", pair_id, "Quantity:", quantity, "Price:", price)
                                 self.checked_order_ids.append(id)
-                        elif price < rub_courses[buy_lot]: # buy any wallet
+                        elif rub_courses[sell_lot] * price * quantity < rub_courses[buy_lot] * quantity: # buy any wallet
                             result = self.api.create_order(pair_id, quantity, price, "buy")
                             if result["status"] == "OK":
                                 print("Order bought. ID:", id, "Pair ID:", pair_id, "Quantity:", quantity, "Price:", price)
                                 self.checked_order_ids.append(id)
                     elif op_type == 'buy':
-                        if buy_lot == 'RUB' and price > rub_courses[sell_lot]: # sell rubles for any wallet
-                            pass
-                            # result = self.api.create_order(pair_id, quantity, price, "sell")
-                            # if result["status"] == "OK":
-                            #     print("Order sold. ID:", id)
-                            #     self.checked_order_ids.append(id)
-                        elif sell_lot == 'RUB' and price < rub_courses[buy_lot]: # sell any wallet for rubles
-                            result = self.api.create_order(pair_id, quantity, price, "sell")
-                            if result["status"] == "OK":
-                                print("Order sold. ID:", id, "Pair ID:", pair_id, "Quantity:", quantity, "Price:", price)
-                                self.checked_order_ids.append(id)
-                        elif price > rub_courses[buy_lot]: # sell any wallet
+                        if sell_lot == 'RUB' or buy_lot == 'RUB':
+                            if buy_lot == 'RUB' and price > rub_courses[sell_lot]: # sell rubles for any wallet
+                                pass
+                            elif sell_lot == 'RUB' and price < rub_courses[buy_lot]: # sell any wallet for rubles
+                                result = self.api.create_order(pair_id, quantity, price, "sell")
+                                if result["status"] == "OK":
+                                    print("Order sold. ID:", id, "Pair ID:", pair_id, "Quantity:", quantity, "Price:", price)
+                                    self.checked_order_ids.append(id)
+                        elif rub_courses[sell_lot] * price * quantity > rub_courses[buy_lot] * quantity: # sell any wallet
                             result = self.api.create_order(pair_id, quantity, price, "sell")
                             if result["status"] == "OK":
                                 print("Order sold. ID:", id, "Pair ID:", pair_id, "Quantity:", quantity, "Price:", price)
