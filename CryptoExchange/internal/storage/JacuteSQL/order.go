@@ -226,18 +226,20 @@ func (s *Storage) Buy(buyerOrder *models.Order, sellerOrder *models.Order) error
 		}
 		s.AddMoney(sellerID, sellLotID, sellerOrder.Quantity*sellerOrder.Price)
 
-		diff := buyerOrder.Quantity - sellerOrder.Quantity
+		if buyerOrder.Quantity > sellerOrder.Quantity {
+			diff := buyerOrder.Quantity - sellerOrder.Quantity
 
-		_, err := s.SaveOrder(&models.Order{
-			UserID:   buyerOrder.UserID,
-			PairID:   buyerOrder.PairID,
-			Quantity: diff,
-			Price:    buyerOrder.Price,
-			Type:     "buy",
-			Closed:   "0",
-		})
-		if err != nil {
-			return fmt.Errorf("%s: can't create new order for buyer: %w", op, err)
+			_, err := s.SaveOrder(&models.Order{
+				UserID:   buyerOrder.UserID,
+				PairID:   buyerOrder.PairID,
+				Quantity: diff,
+				Price:    buyerOrder.Price,
+				Type:     "buy",
+				Closed:   "0",
+			})
+			if err != nil {
+				return fmt.Errorf("%s: can't create new order for buyer: %w", op, err)
+			}
 		}
 	} else if sellerOrder.Quantity >= buyerOrder.Quantity {
 		// deposit lot to the buyer account
@@ -277,6 +279,7 @@ func (s *Storage) Buy(buyerOrder *models.Order, sellerOrder *models.Order) error
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
+	buyerOrder.Price = sellerOrder.Price // because seller order price <= buyer order price
 	_, err = s.SaveOrder(buyerOrder)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
