@@ -1,0 +1,3 @@
+[submodule "JacuteSQL"]
+	path = JacuteSQL
+	url = https://github.com/Jacute/JacuteSQL
