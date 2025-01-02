@@ -4,7 +4,10 @@
 
 ## Запуск
 
-`docker compose -f docker-compose-balance.yml up`
+```bash
+git clone --recurse-submodules https://github.com/Jacute/CryptoExchange
+docker compose -f docker-compose-balance.yml up
+```
 
 ## Эндпоинты API
 
